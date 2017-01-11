@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<extension key="eu.businessandcode.membershipstatus" type="module">
+  <file>membershipstatus</file>
+  <name>Membership Status Bulk Change</name>
+  <description>Task to change the membership status of the selected memberships.</description>
+  <license>AGPL-3.0</license>
+  <maintainer>
+    <author>Alain Benbassat</author>
+    <email>alain@businessandcode.eu</email>
+  </maintainer>
+  <releaseDate>2017-01-11</releaseDate>
+  <version>1.0</version>
+  <develStage>Stable</develStage>
+  <compatibility>
+    <ver>4.2</ver>
+  </compatibility>
+  <comments>Task to change the membership status of the selected memberships.</comments>
+  <civix>
+    <namespace>CRM/Membershipstatus</namespace>
+  </civix>
+</extension>
