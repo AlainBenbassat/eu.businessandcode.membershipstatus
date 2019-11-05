@@ -18,7 +18,7 @@ function membershipstatus_civicrm_searchTasks( $objectName, &$tasks ) {
     if (!$taskFound) {
       $tasks[] = array(
         'class' => 'CRM_Membershipstatus_Task_ChangeStatus',
-        'title' => ts('Wijzig lidmaatschapstatus'),
+        'title' => ts('Wijzig lidmaatschapstatus en maak bijdragen'),
         'result' => FALSE,
       );
     }

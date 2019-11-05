@@ -8,8 +8,13 @@
 
 <div class="spacer"></div>
 
-<span>{$form.status_id.label}: </span>
-{$form.status_id.html}
+{foreach from=$elementNames item=elementName}
+  <div class="crm-section">
+    <div class="label">{$form.$elementName.label}</div>
+    <div class="content">{$form.$elementName.html}</div>
+    <div class="clear"></div>
+  </div>
+{/foreach}
 
 <div class="spacer"></div>
 <div class="form-item">
