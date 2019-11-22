@@ -9,10 +9,10 @@
     <email>alain@businessandcode.eu</email>
   </maintainer>
   <releaseDate>2017-01-11</releaseDate>
-  <version>1.0</version>
+  <version>2.0</version>
   <develStage>Stable</develStage>
   <compatibility>
-    <ver>4.2</ver>
+    <ver>5</ver>
   </compatibility>
   <comments>Task to change the membership status of the selected memberships.</comments>
   <civix>
