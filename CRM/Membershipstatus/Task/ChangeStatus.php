@@ -52,12 +52,12 @@ class CRM_Membershipstatus_Task_ChangeStatus extends CRM_Member_Form_Task {
     // end date
     $this->add('datepicker', 'end_date', 'Einddatum lidmaatschap:', '', TRUE, ['time' => FALSE]);
     $formItems[] = 'end_date';
-    $defaults['end_date'] = $this->getDefaultEndDate();
+    $defaults['end_date'] = $this->getDefaultEndDate('full');
 
     // source
     $this->add('text', 'source', 'Bron bijdrage', ['style' => 'width:25em']);
     $formItems[] = 'source';
-    $defaults['source'] = 'Renewal via Task on ' . date('Y-m-d');
+    $defaults['source'] = 'LIDM' . $this->getDefaultEndDate('Y');
 
     // assign form elements to template
     $this->assign('elementNames', $formItems);
@@ -185,16 +185,24 @@ class CRM_Membershipstatus_Task_ChangeStatus extends CRM_Member_Form_Task {
    *
    * @return string
    */
-  private function getDefaultEndDate() {
+  private function getDefaultEndDate($what) {
     // get current month
     $currentMonth = date('n');
     if ($currentMonth <= 3) {
       // set to current year
-      $endDate = date('Y') . '-12-31';
+      $endYear = date('Y');
     }
     else {
       // set to next year
-      $endDate = (date('Y') + 1) . '-12-31';
+      $endYear = (date('Y') + 1);
+    }
+
+    // return only the year or the full end date
+    if ($what == 'Y') {
+      return $endYear;
+    }
+    else {
+      return $endYear  . '-12-31';
     }
 
     return $endDate;
