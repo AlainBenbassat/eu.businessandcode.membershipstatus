@@ -39,44 +39,45 @@ class CRM_Membershipstatus_Task_ChangeStatus extends CRM_Member_Form_Task {
     // add help
     $this->assign('detailedInfo', 'Kies de nieuwe status voor de geselecteerde lidmaatschappen en de gewenste einddatum.<br><br>Het lidmaatschap wordt dan bijgewerkt EN er wordt een bijdrage gemaakt op datum van 1 januari in het gekozen jaar.');
 
-    // add status id's and end date
-    $memberShipStatus = CRM_Member_PseudoConstant::membershipStatus();
-    $this->add('select', 'membership_status_id', ts('Lidmaatschapstatus'), $memberShipStatus, TRUE, FALSE);
-    $this->add('datepicker', 'end_date', 'Einddatum lidmaatschap:', '', TRUE, ['time' => FALSE]);
-
-    // assign form elements to template
-    $this->assign('elementNames', ['membership_status_id', 'end_date']);
-
-    // set defaults
+    // add form fields
+    $formItems = [];
     $defaults = [];
 
+    // membership status
+    $memberShipStatus = CRM_Member_PseudoConstant::membershipStatus();
+    $this->add('select', 'membership_status_id', ts('Lidmaatschapstatus'), $memberShipStatus, TRUE, FALSE);
+    $formItems[] = 'membership_status_id';
     $defaults['membership_status_id'] = 2; // current
 
-    // get current month
-    $currentMonth = date('n');
-    if ($currentMonth <= 3) {
-      // set to current year
-      $defaults['end_date'] = date('Y') . '-12-31';
-    }
-    else {
-      // set to next year
-      $defaults['end_date'] = (date('Y') + 1) . '-12-31';
-    }
+    // end date
+    $this->add('datepicker', 'end_date', 'Einddatum lidmaatschap:', '', TRUE, ['time' => FALSE]);
+    $formItems[] = 'end_date';
+    $defaults['end_date'] = $this->getDefaultEndDate();
 
+    // source
+    $this->add('text', 'source', 'Bron bijdrage', ['style' => 'width:25em']);
+    $formItems[] = 'source';
+    $defaults['source'] = 'Renewal via Task on ' . date('Y-m-d');
+
+    // assign form elements to template
+    $this->assign('elementNames', $formItems);
+
+    // set defaults
     $this->setDefaults($defaults);
 
+    // add the buttons
     $this->addButtons(
-      array(
-        array(
+      [
+        [
           'type' => 'next',
           'name' => 'Wijzig',
           'isDefault' => TRUE,
-        ),
-        array(
+        ],
+        [
           'type' => 'back',
           'name' => ts('Cancel'),
-        ),
-      )
+        ],
+      ]
     );
   }
 
@@ -86,6 +87,7 @@ class CRM_Membershipstatus_Task_ChangeStatus extends CRM_Member_Form_Task {
     // get the selected status id
     $statusID =  $submittedVales['membership_status_id'];
     $endDate = $submittedVales['end_date'];
+    $source = $submittedVales['source'];
 
     // create the queue
     $queue = CRM_Queue_Service::singleton()->create([
@@ -97,7 +99,7 @@ class CRM_Membershipstatus_Task_ChangeStatus extends CRM_Member_Form_Task {
     // store the id's in the queue
     // update the status
     foreach ($this->_memberIds as $memberID) {
-      $task = new CRM_Queue_Task(['CRM_Membershipstatus_Task_ChangeStatus', 'processMembership'], [$memberID, $statusID, $endDate]);
+      $task = new CRM_Queue_Task(['CRM_Membershipstatus_Task_ChangeStatus', 'processMembership'], [$memberID, $statusID, $endDate, $source]);
       $queue->createItem($task);
     }
 
@@ -113,7 +115,7 @@ class CRM_Membershipstatus_Task_ChangeStatus extends CRM_Member_Form_Task {
     }
   }
 
-  public static function processMembership(CRM_Queue_TaskContext $ctx, $memberID, $statusID, $endDate) {
+  public static function processMembership(CRM_Queue_TaskContext $ctx, $memberID, $statusID, $endDate, $source, $description) {
     // get the membership
     $memberShip = civicrm_api3('Membership', 'getsingle', ['id' => $memberID]);
 
@@ -132,9 +134,9 @@ class CRM_Membershipstatus_Task_ChangeStatus extends CRM_Member_Form_Task {
     $sql = "
       select
         *
-      from 
+      from
         civicrm_membership_payment mp
-      inner join 
+      inner join
         civicrm_contribution c on c.id = mp.contribution_id and year(c.receive_date) = %2
       where
         mp.membership_id = %1
@@ -156,10 +158,11 @@ class CRM_Membershipstatus_Task_ChangeStatus extends CRM_Member_Form_Task {
         'receive_date' => substr($endDate, 0, 4) . '-01-01 12:00',
         'total_amount' => $price,
         'net_amount' => $price,
-        'contribution_source' => 'Renewal via Task on ' . date('Y-m-d'),
+        'contribution_source' => $source,
         'contribution_status_id' => 2,
         'payment_instrument' => 'EFT',
         'sequential' => 1,
+        'custom_116' => $memberShip['custom_134'], // PO number
       ];
       $contrib = civicrm_api3('Contribution', 'create', $params);
 
@@ -172,6 +175,29 @@ class CRM_Membershipstatus_Task_ChangeStatus extends CRM_Member_Form_Task {
     }
 
     return TRUE;
+  }
+
+  /**
+   * Returns the last day of the year.
+   *
+   * In Jan, Feb, March we return the last day of the current year
+   * In all other months we return the last day of next year
+   *
+   * @return string
+   */
+  private function getDefaultEndDate() {
+    // get current month
+    $currentMonth = date('n');
+    if ($currentMonth <= 3) {
+      // set to current year
+      $endDate = date('Y') . '-12-31';
+    }
+    else {
+      // set to next year
+      $endDate = (date('Y') + 1) . '-12-31';
+    }
+
+    return $endDate;
   }
 }
 
