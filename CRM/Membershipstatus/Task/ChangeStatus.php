@@ -115,64 +115,9 @@ class CRM_Membershipstatus_Task_ChangeStatus extends CRM_Member_Form_Task {
     }
   }
 
-  public static function processMembership(CRM_Queue_TaskContext $ctx, $memberID, $statusID, $endDate, $source, $description) {
-    // get the membership
-    $memberShip = civicrm_api3('Membership', 'getsingle', ['id' => $memberID]);
-
-    // check if status or end date needs to be updated
-    if ($memberShip['end_date'] != $endDate || $memberShip['status_id'] != $statusID) {
-      // update the membership
-      $params = [
-        'id' => $memberID,
-        'end_date' => $endDate,
-        'status_id' => $statusID,
-      ];
-      civicrm_api3('Membership', 'create', $params);
-    }
-
-    // see if we have a corresponding contribution for the requested year
-    $sql = "
-      select
-        *
-      from
-        civicrm_membership_payment mp
-      inner join
-        civicrm_contribution c on c.id = mp.contribution_id and year(c.receive_date) = %2
-      where
-        mp.membership_id = %1
-    ";
-    $sqlParams = [
-      1 => [$memberID, 'Integer'],
-      2 => [substr($endDate, 0, 4), 'Integer'],
-    ];
-    $dao = CRM_Core_DAO::executeQuery($sql, $sqlParams);
-    if ($dao->fetch()) {
-      // OK, do nothing
-    }
-    else {
-      // create contribution
-      $price = CRM_Core_DAO::getFieldValue('CRM_Member_DAO_MembershipType', $memberShip['membership_type_id'], 'minimum_fee');
-      $params = [
-        'contact_id' => $memberShip['contact_id'],
-        'financial_type_id' => 2,
-        'receive_date' => substr($endDate, 0, 4) . '-01-01 12:00',
-        'total_amount' => $price,
-        'net_amount' => $price,
-        'contribution_source' => $source,
-        'contribution_status_id' => 2,
-        'payment_instrument' => 'EFT',
-        'sequential' => 1,
-        'custom_116' => $memberShip['custom_134'], // PO number
-      ];
-      $contrib = civicrm_api3('Contribution', 'create', $params);
-
-      // link this contribution with the membership
-      $params = [
-        'membership_id' => $memberID,
-        'contribution_id' => $contrib['id'],
-      ];
-      civicrm_api3('MembershipPayment', 'create', $params);
-    }
+  public static function processMembership(CRM_Queue_TaskContext $ctx, $memberID, $statusID, $endDate, $source) {
+    $membershipProcessor = new CRM_Membershipstatus_Processor();
+    $membershipProcessor->process($memberID, $statusID, $endDate, $source);
 
     return TRUE;
   }
