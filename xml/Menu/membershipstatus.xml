@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<menu>
+  <item>
+    <path>civicrm/bemas-clear-po</path>
+    <page_callback>CRM_Membershipstatus_Form_ClearPO</page_callback>
+    <title>ClearPO</title>
+    <access_arguments>access CiviCRM</access_arguments>
+  </item>
+</menu>
